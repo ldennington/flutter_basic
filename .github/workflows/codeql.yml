@@ -1,0 +1,68 @@
+name: "CodeQL"
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  schedule:
+    - cron: "17 17 * * 5"
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ${{ (matrix.language == 'swift' && 'macos-13') || (matrix.language == 'c-cpp' && 'windows-latest') || 'ubuntu-latest' }}
+    timeout-minutes: ${{ (matrix.language == 'swift' && 120) || 360 }}
+    permissions:
+      security-events: write
+      packages: read
+      actions: read
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: c-cpp
+            build-mode: manual
+          - language: java-kotlin
+            build-mode: manual
+          - language: swift
+            build-mode: manual
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.22.3
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+
+      - if: matrix.language == 'swift' || matrix.language == 'java-kotlin'
+        name: Download dependencies
+        run: flutter pub get
+
+      - if: matrix.language == 'c-cpp'
+        name: Build Windows for C/C++ analysis
+        run: flutter build windows
+
+      - if: matrix.language == 'java-kotlin'
+        name: Build Android for Java/Kotlin analysis
+        run: flutter build apk && flutter build appbundle
+
+      - if: matrix.language == 'swift'
+        name: Build iOS for Swift analysis
+        run: |
+          flutter build ios --release --no-codesign
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{matrix.language}}"
