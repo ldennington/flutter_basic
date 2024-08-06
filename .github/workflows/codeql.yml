@@ -11,7 +11,7 @@ on:
 jobs:
   analyze:
     name: Analyze (${{ matrix.language }})
-    runs-on: ${{ (matrix.language == 'swift' && 'macos-13') || (matrix.language == 'c-cpp' && 'windows-latest') || 'ubuntu-latest' }}
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: ${{ (matrix.language == 'swift' && 120) || 360 }}
     permissions:
       security-events: write
@@ -25,10 +25,16 @@ jobs:
         include:
           - language: c-cpp
             build-mode: manual
+            runner: macos-13
+          - language: c-cpp
+            build-mode: manual
+            runner: windows-latest
           - language: java-kotlin
             build-mode: manual
+            runner: ubuntu-latest
           - language: swift
             build-mode: manual
+            runner: macos-13
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -45,20 +51,20 @@ jobs:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
 
-      - if: matrix.language == 'swift' || matrix.language == 'java-kotlin'
-        name: Download dependencies
+      - name: Download dependencies
         run: flutter pub get
 
-      - if: matrix.language == 'c-cpp'
+      - if: matrix.language == 'c-cpp' && matrix.runner == 'windows-latest'
         name: Build Windows for C/C++ analysis
-        run: flutter build windows
+        run: |
+          flutter build windows
 
       - if: matrix.language == 'java-kotlin'
         name: Build Android for Java/Kotlin analysis
         run: flutter build apk && flutter build appbundle
 
-      - if: matrix.language == 'swift'
-        name: Build iOS/macOS for Swift analysis
+      - if: matrix.language == 'swift' || matrix.language == 'c-cpp' && matrix.runner == 'macos-13'
+        name: Build iOS/macOS for Swift and C/C++ analysis
         run: |
           flutter build ios --release --no-codesign
           flutter build macos
