@@ -62,6 +62,7 @@ jobs:
         name: Build iOS
         run: |
           flutter build ios --release --no-codesign
+          flutter build macos
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
