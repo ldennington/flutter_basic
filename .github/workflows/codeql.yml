@@ -59,7 +59,7 @@ jobs:
           flutter build linux
 
       - if: matrix.os == 'macos-13'
-        name: Build iOS
+        name: Build iOS/macOS
         run: |
           flutter build ios --release --no-codesign
           flutter build macos
@@ -67,9 +67,9 @@ jobs:
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
         with:
-          category: "/language:${{matrix.language}}"
+          category: "/language:c-cpp"
 
-  analyze:
+  analyze-java-kotlin-swift:
     name: Analyze ${{ matrix.language-proper }}
     runs-on: ${{ (matrix.language == 'swift' && 'macos-13') || 'ubuntu-latest' }}
     timeout-minutes: ${{ (matrix.language == 'swift' && 120) || 360 }}
@@ -109,13 +109,13 @@ jobs:
         run: flutter pub get
 
       - if: matrix.language == 'java-kotlin'
-        name: Build Android for Java/Kotlin analysis
+        name: Build Android
         run: |
           flutter build apk
           flutter build appbundle
 
       - if: matrix.language == 'swift'
-        name: Build iOS/macOS for Swift analysis
+        name: Build iOS/macOS
         run: |
           flutter build ios --release --no-codesign
           flutter build macos
